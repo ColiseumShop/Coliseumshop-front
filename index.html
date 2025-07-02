@@ -299,13 +299,30 @@
       console.log('Chamando filterMenu para categoria:', category, 'sub:', sub); // Log para depuração
       console.log('Produtos disponíveis (global):', produtos); // Log para depuração
 
-      let filteredProducts = produtos.filter(p =>
-        p.categoria === category
-      );
-      // Removido a verificação de categorias fixas, pois agora vem do Firestore
+      // CORREÇÃO AQUI: Acessar o valor da categoria corretamente
+      let filteredProducts = produtos.filter(p => {
+        // Verifica se p.categoria existe e se é uma string
+        if (typeof p.categoria === 'string') {
+          // Extrai o valor da categoria, assumindo o formato "CATEGORIA: 'VALOR'"
+          const match = p.categoria.match(/CATEGORIA: '(.*)'/);
+          if (match && match[1]) {
+            return match[1].toLowerCase() === category.toLowerCase();
+          }
+        }
+        return false; // Se a categoria não estiver no formato esperado
+      });
       
       if(category === 'muaythai' && sub) {
-        filteredProducts = filteredProducts.filter(p => (p.subcategoria||'').toLowerCase() === sub);
+        filteredProducts = filteredProducts.filter(p => {
+          // Lógica similar para subcategoria, se estiver no mesmo formato
+          if (typeof p.subcategoria === 'string') {
+            const match = p.subcategoria.match(/SUBCATEGORIA: '(.*)'/);
+            if (match && match[1]) {
+              return match[1].toLowerCase() === sub.toLowerCase();
+            }
+          }
+          return false;
+        });
       }
       
       console.log('Produtos filtrados:', filteredProducts); // Log para depuração
