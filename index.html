@@ -149,7 +149,7 @@
       <button data-category="vestuario" class="active">Vestuário</button>
       <button data-category="muaythai">Muay Thai/Boxe</button>
       <button data-category="jiujitsu">Jiu-jitsu/Judô</button>
-      <button data-category="acessorios">Acessórios</button>
+      <button data-category="acessorios" >Acessórios</button>
     </nav>
     <div id="submenu-muaythai" style="display:none; text-align:center; margin-top:5px;">
       <button class="sub-btn" data-sub="luvas" style="margin:2px 7px; padding:8px 25px; border-radius:8px; border:1.5px solid #b8862b; background:#fff; color:#8c1212; font-weight:bold; cursor:pointer;">Luvas</button>
@@ -235,7 +235,7 @@
           throw new Error(`Erro ao buscar produtos: ${response.statusText}`);
         }
         produtos = await response.json();
-        console.log('Produtos carregados do Firestore:', produtos);
+        console.log('Produtos carregados do Firestore:', produtos); // Log para verificar os produtos
         // Renderiza os produtos após carregá-los
         const activeBtn = document.querySelector('nav button.active');
         const categoria = activeBtn ? activeBtn.getAttribute('data-category') : 'vestuario';
@@ -296,22 +296,33 @@
     }
 
     function filterMenu(category, sub = null) {
+      console.log('Chamando filterMenu para categoria:', category, 'sub:', sub); // Log para depuração
+      console.log('Produtos disponíveis (global):', produtos); // Log para depuração
+
       let filteredProducts = produtos.filter(p =>
-        p.categoria === category && ['vestuario','muaythai','jiujitsu','acessorios'].includes(p.categoria)
+        p.categoria === category
       );
+      // Removido a verificação de categorias fixas, pois agora vem do Firestore
+      
       if(category === 'muaythai' && sub) {
         filteredProducts = filteredProducts.filter(p => (p.subcategoria||'').toLowerCase() === sub);
       }
+      
+      console.log('Produtos filtrados:', filteredProducts); // Log para depuração
+
       if (filteredProducts.length === 0) {
         document.getElementById('product-list').innerHTML = '<p class="empty-cart">Nenhum produto disponível nesta categoria no momento.</p>';
         return;
       }
       const list = document.getElementById('product-list');
-      list.innerHTML = '';
+      list.innerHTML = ''; // Limpa a lista antes de adicionar novos produtos
       filteredProducts.forEach(p => {
-        if (selectedQty[p.id] === undefined) selectedQty[p.id] = 1;
-        if (p.estoque !== undefined && selectedQty[p.id] > p.estoque) selectedQty[p.id] = p.estoque || 1;
-        if (p.estoque === 0) selectedQty[p.id] = 1;
+        // Garantir que p.id existe e é uma string
+        const productId = p.id ? String(p.id) : `temp-${Math.random().toString(36).substring(7)}`; // Fallback para ID
+        
+        if (selectedQty[productId] === undefined) selectedQty[productId] = 1;
+        if (p.estoque !== undefined && selectedQty[productId] > p.estoque) selectedQty[productId] = p.estoque || 1;
+        if (p.estoque === 0) selectedQty[productId] = 1;
         const estrelas = '<span class="star-rating">★ ★ ★ ★ ★</span>';
         const esgotado = (p.estoque !== undefined && p.estoque <= 0);
         const div = document.createElement('div');
@@ -323,15 +334,15 @@
           ${estrelas}
           <div class="product-controls">
             <div class="quantity-selector">
-              <button class="quantity-btn" onclick="changeQty('${p.id}', -1)" ${esgotado || selectedQty[p.id]<=1 ? 'disabled' : ''}>-</button>
-              <span class="quantity-value" id="qty-value-${p.id}">${selectedQty[p.id]}</span>
-              <button class="quantity-btn" onclick="changeQty('${p.id}', 1)" ${esgotado || selectedQty[p.id]>=p.estoque ? 'disabled' : ''}>+</button>
+              <button class="quantity-btn" onclick="changeQty('${productId}', -1)" ${esgotado || selectedQty[productId]<=1 ? 'disabled' : ''}>-</button>
+              <span class="quantity-value" id="qty-value-${productId}">${selectedQty[productId]}</span>
+              <button class="quantity-btn" onclick="changeQty('${productId}', 1)" ${esgotado || selectedQty[productId]>=p.estoque ? 'disabled' : ''}>+</button>
             </div>
             ${esgotado
               ? `<span style="color:#b01212;font-weight:bold;padding:8px 15px;">Esgotado</span>`
-              : `<button class="add-cart-btn" onclick="addToCart('${p.id}')" ${selectedQty[p.id]>p.estoque ? 'disabled' : ''}>Adicionar</button>`
+              : `<button class="add-cart-btn" onclick="addToCart('${productId}')" ${selectedQty[productId]>p.estoque ? 'disabled' : ''}>Adicionar</button>`
             }
-            <button class="add-cart-btn" style="background:#b8862b99;" onclick="openModalProduto('${p.id}')">Detalhes</button>
+            <button class="add-cart-btn" style="background:#b8862b99;" onclick="openModalProduto('${productId}')">Detalhes</button>
           </div>
           <div class="prod-estoque" style="margin-top:7px;color:${esgotado ? '#b01212' : '#4CAF50'};font-size:0.96em;">
             ${esgotado ? 'Esgotado' : 'Estoque: ' + (p.estoque ?? '--')}
@@ -346,7 +357,8 @@
       if (!p || p.estoque <= 0) return;
       selectedQty[id] = Math.max(1, Math.min(p.estoque, (selectedQty[id] || 1) + delta));
       document.getElementById('qty-value-' + id).innerText = selectedQty[id];
-      filterMenu(p.categoria);
+      // Não precisa chamar filterMenu aqui, apenas atualiza a quantidade
+      // filterMenu(p.categoria); // Removido para evitar re-render desnecessário
     }
 
     window.addToCart = function(id) {
