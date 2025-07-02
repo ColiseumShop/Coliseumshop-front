@@ -299,29 +299,24 @@
       console.log('Chamando filterMenu para categoria:', category, 'sub:', sub); // Log para depuração
       console.log('Produtos disponíveis (global):', produtos); // Log para depuração
 
-      // CORREÇÃO AQUI: Acessar o valor da categoria corretamente
+      // CORREÇÃO AQUI: Acessar o valor da categoria corretamente e normalizá-lo
       let filteredProducts = produtos.filter(p => {
-        // Verifica se p.categoria existe e se é uma string
-        if (typeof p.categoria === 'string') {
-          // Extrai o valor da categoria, assumindo o formato "CATEGORIA: 'VALOR'"
-          const match = p.categoria.match(/CATEGORIA: '(.*)'/);
-          if (match && match[1]) {
-            return match[1].toLowerCase() === category.toLowerCase();
-          }
-        }
-        return false; // Se a categoria não estiver no formato esperado
+        // Normaliza o valor da categoria do produto (remove espaços, converte para minúsculas)
+        const productCategory = p.categoria ? String(p.categoria).trim().toLowerCase() : '';
+        // Normaliza o valor da categoria do botão (converte para minúsculas)
+        const filterCategory = category ? String(category).toLowerCase() : '';
+        
+        return productCategory === filterCategory;
       });
       
       if(category === 'muaythai' && sub) {
         filteredProducts = filteredProducts.filter(p => {
-          // Lógica similar para subcategoria, se estiver no mesmo formato
-          if (typeof p.subcategoria === 'string') {
-            const match = p.subcategoria.match(/SUBCATEGORIA: '(.*)'/);
-            if (match && match[1]) {
-              return match[1].toLowerCase() === sub.toLowerCase();
-            }
-          }
-          return false;
+          // Normaliza o valor da subcategoria do produto
+          const productSubcategory = p.subcategoria ? String(p.subcategoria).trim().toLowerCase() : '';
+          // Normaliza o valor da subcategoria do botão
+          const filterSubcategory = sub ? String(sub).toLowerCase() : '';
+          
+          return productSubcategory === filterSubcategory;
         });
       }
       
@@ -489,7 +484,7 @@
 
       const customerEmail = document.getElementById('customer-email').value;
       if (!customerEmail) {
-        document.getElementById('cart-error').innerText = 'Por favor, informe seu e-mail.';
+        document.getElementById('cart-error').innerText = 'Por favor, informe seu e-email.';
         return;
       }
 
