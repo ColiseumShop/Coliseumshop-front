@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Coliseum Shop</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    body { background: #fff; color: #222; font-family: 'Montserrat', Arial, sans-serif; margin: 0; }
+    header { background: #fff; padding: 26px 10px 14px 10px; text-align: center; border-bottom: 2px solid #b8862b; }
+    h1 { color: #8c1212; font-size: 2.2em; margin-bottom: 5px; }
+    /* Estilos para as abas */
+    .tabs { display: flex; justify-content: center; margin-bottom: 20px; }
+    .tab-button {
+      background: #f0f0f0;
+      border: 1px solid #ddd;
+      padding: 10px 20px;
+      cursor: pointer;
+      font-weight: bold;
+      border-radius: 8px 8px 0 0;
+      margin: 0 2px;
+      transition: background 0.2s, color 0.2s;
+    }
+    .tab-button.active {
+      background: #b8862b;
+      color: white;
+      border-color: #b8862b;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .tab-content { display: none; padding: 20px 0; border-top: 1px solid #eee; }
+    .tab-content.active { display: block; }
+
+    main { max-width: 620px; margin: 38px auto 30px auto; background: #fff9ec; border-radius: 18px; padding: 32px 22px 24px 22px; box-shadow: 0 4px 24px #b8862b12; }
+    label { display: block; margin: 14px 0 6px 0; font-weight: bold; }
+    input, select, textarea { width: 100%; padding: 11px; border-radius: 7px; border: 1.5px solid #b8862b; margin-bottom: 8px; font-size: 1em; background: #fff;}
+    button, .del-btn, .edit-btn, .logout-btn { background: #b8862b; color: #fff; border: none; border-radius: 8px; padding: 13px 0; font-size: 1.13em; font-weight: bold; cursor: pointer; width: 100%; margin-top: 7px; transition: 0.18s; }
+    button:hover, .del-btn:hover, .edit-btn:hover, .logout-btn:hover { background: #8c1212; }
+    .logout-btn { margin-top: 0; background: #8c1212;}
+    .prod-list, .order-list { margin-top: 32px; }
+    .prod-item, .order-item { border-bottom: 1.5px solid #eee; padding: 15px 0; display: flex; align-items: center; gap: 18px; }
+    .prod-item img { width: 65px; height: 65px; border-radius: 8px; object-fit: cover; border: 2px solid #b8862b; }
+    .prod-info, .order-info { flex: 1; }
+    .prod-nome, .order-id { font-weight: bold; color: #8c1212; font-size:1.05em; }
+    .prod-cat { font-size: 0.97em; color: #b8862b; }
+    .prod-preco, .order-total { font-size: 1em; }
+    .prod-desc { color: #666; font-size: 0.98em;}
+    .prod-estoque { color: #4CAF50; font-size: 1em; font-weight:bold; margin-top:3px;}
+    .prod-estoque.esgotado { color: #b01212; }
+    .del-btn, .edit-btn, .view-btn, .status-select { width:auto; padding:8px 15px; margin:0 3px;}
+    .del-btn { background:#8c1212;}
+    .edit-btn { background:#b8862b;}
+    .view-btn { background:#007bff; color:#fff;} /* Novo estilo para botão 'Ver Detalhes' */
+    .status-select { background:#f0f0f0; border:1px solid #ccc; border-radius:5px;} /* Estilo para select de status */
+    .edit-btn:hover {background:#5e4007;}
+    .del-btn:hover {background:#b8862b;}
+    .view-btn:hover {background:#0056b3;}
+    .form-actions { display:flex; gap:12px; }
+    .form-actions button {width:100%;}
+    #notify {
+      position:fixed; top:20px; right:20px; background:#4CAF50; color:#fff; font-weight:bold; padding:18px 32px; border-radius:14px;
+      z-index:5000; box-shadow:0 4px 24px #2225; font-size:1.07em; display:none;
+    }
+    #stats-box {background:#ffe7bb;margin:22px 0 18px 0;padding:13px 18px;border-radius:12px;font-size:1.04em;}
+    #stats-box strong {color:#8c1212;}
+    #busca-produto {margin-bottom:12px;}
+    .upload-preview {margin:7px 0 12px 0;}
+    .upload-preview img {max-width:100px;max-height:100px;border-radius:7px;}
+    .login-box { max-width: 350px; margin: 60px auto; background: #fffbe8; border-radius: 18px; padding: 32px 28px; box-shadow: 0 4px 24px #b8862b22; text-align: center;}
+    .login-box input { margin-bottom: 18px;}
+    .login-box button {margin-top:12px;}
+    /* Estilos para o Modal de Detalhes do Pedido */
+    #order-details-modal {
+      display: none;
+      position: fixed;
+      z-index: 10000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgba(0,0,0,0.7);
+      justify-content: center;
+      align-items: center;
+    }
+    .modal-content {
+      background-color: #fefefe;
+      margin: auto;
+      padding: 20px;
+      border: 1px solid #888;
+      width: 80%;
+      max-width: 500px;
+      border-radius: 15px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+      position: relative;
+    }
+    .close-button {
+      color: #aaa;
+      float: right;
+      font-size: 28px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .close-button:hover,
+    .close-button:focus {
+      color: black;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .order-detail-item {
+      border-bottom: 1px dashed #eee;
+      padding: 8px 0;
+    }
+    .order-detail-item:last-child { border-bottom: none; }
+
+    @media (max-width: 700px) {
+      main { padding: 1em 2vw; }
+      .prod-item, .order-item { flex-direction: column; align-items: flex-start; }
+      .prod-item img { margin-bottom: 10px; }
+      .del-btn, .edit-btn, .view-btn, .status-select { width:100%; margin:4px 0;}
+      #notify {max-width: 90vw;right:2vw;}
+      .modal-content { width: 95%; }
+    }
+  </style>
+</head>
+<body>
+  <div id="notify"></div>
+  <div id="login-container">
+    <div class="login-box">
+      <h2>Admin Coliseum Shop</h2>
+      <input type="email" id="admin-email" placeholder="E-mail de admin" />
+      <input type="password" id="admin-pass" placeholder="Senha de admin" />
+      <button onclick="window.doLogin()">Entrar</button>
+      <div id="login-err" style="color:#c00;font-size:0.96em;margin-top:12px;"></div>
+    </div>
+  </div>
+  <div id="admin-app" style="display:none;">
+    <header>
+      <h1>Admin Coliseum Shop</h1>
+      <button class="logout-btn" onclick="window.logout()" style="width:auto;float:right;margin:0;">Logout</button>
+      <div style="clear:both"></div>
+    </header>
+    <main>
+      <div class="tabs">
+        <button class="tab-button active" data-tab="products">Produtos</button>
+        <button class="tab-button" data-tab="orders">Pedidos</button>
+      </div>
+
+      <div id="products-tab" class="tab-content active">
+        <div id="stats-box"></div>
+        <input type="text" id="busca-produto" placeholder="Buscar produto por nome...">
+        <form id="produto-form">
+          <label for="nome">Nome do Produto</label>
+          <input type="text" id="nome" maxlength="50" required>
+          <label for="preco">Preço (ex: 99.90)</label>
+          <input type="number" id="preco" step="0.01" min="0" required>
+          <label for="categoria">Categoria</label>
+          <select id="categoria" required>
+            <option value="vestuario">Vestuário</option>
+            <option value="muaythai">Muay Thai/Boxe</option>
+            <option value="jiujitsu">Jiu-jitsu/Judô</option>
+            <option value="acessorios">Acessórios</option>
+          </select>
+          <label for="subcategoria">Subcategoria (opcional)</label>
+          <select id="subcategoria">
+            <option value="">Nenhuma</option>
+            <option value="luvas">Luvas</option>
+            <option value="caneleiras">Caneleiras</option>
+          </select>
+          <label for="imgurl">URL da Imagem (ou faça upload abaixo)</label>
+          <input type="url" id="imgurl" maxlength="255" placeholder="https://exemplo.com/imagem.jpg">
+          <div class="upload-preview" id="upload-preview"></div>
+          <input type="file" id="upload-img" accept="image/*">
+          <label for="descricao">Descrição (opcional)</label>
+          <textarea id="descricao" maxlength="120" rows="2"></textarea>
+          <label for="estoque">Estoque</label>
+          <input type="number" id="estoque" min="0" required placeholder="Quantidade disponível">
+          <input type="hidden" id="edit-id">
+          <div class="form-actions">
+            <button type="submit" id="form-btn">Cadastrar Produto</button>
+            <button type="button" onclick="limparForm()">Limpar Campos</button>
+          </div>
+        </form>
+        <div class="prod-list" id="prod-list"></div>
+      </div>
+
+      <div id="orders-tab" class="tab-content">
+        <h2>Pedidos Recentes</h2>
+        <div class="order-list" id="order-list">
+          <p style="text-align:center; color:#aaa;">Nenhum pedido encontrado ainda.</p>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Modal de Detalhes do Pedido -->
+  <div id="order-details-modal">
+    <div class="modal-content">
+      <span class="close-button" onclick="closeOrderDetailsModal()">&times;</span>
+      <h3>Detalhes do Pedido <span id="modal-order-id"></span></h3>
+      <p><strong>Comprador:</strong> <span id="modal-payer-email"></span></p>
+      <p><strong>Data:</strong> <span id="modal-order-date"></span></p>
+      <p><strong>Status:</strong> <span id="modal-order-status"></span></p>
+      <h4>Itens:</h4>
+      <ul id="modal-order-items" style="list-style:none; padding:0;"></ul>
+      <p><strong>Total:</strong> <span id="modal-order-total"></span></p>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, getDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+    import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyC0Sbrn6vAsUtQGMqIezUdwyNAlPIaXLIk",
+      authDomain: "coliseumshop-baedf.firebaseapp.com",
+      projectId: "coliseumshop-baedf",
+      storageBucket: "coliseumshop-baedf.firebasestorage.app",
+      messagingSenderId: "632517267457",
+      appId: "1:632517267457:web:05b67777cc39a0ba8c3000",
+      measurementId: "G-G660SJBNE4"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const storage = getStorage(app);
+    const auth = getAuth(app);
+
+    // --- LOGIN COM FIREBASE AUTH ---
+    window.doLogin = async function() {
+      const email = document.getElementById('admin-email').value.trim();
+      const password = document.getElementById('admin-pass').value.trim();
+      const loginErr = document.getElementById('login-err');
+
+      if (!email || !password) {
+        loginErr.innerText = 'Por favor, preencha e-mail e senha.';
+        return;
+      }
+
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+      } catch (error) {
+        console.error("Erro de login:", error);
+        switch (error.code) {
+          case 'auth/user-not-found':
+          case 'auth/wrong-password':
+          case 'auth/invalid-credential':
+            loginErr.innerText = 'E-mail ou senha incorretos.';
+            break;
+          case 'auth/invalid-email':
+            loginErr.innerText = 'Formato de e-mail inválido.';
+            break;
+          default:
+            loginErr.innerText = 'Erro ao fazer login: ' + error.message;
+        }
+      }
+    }
+
+    window.logout = function() {
+      signOut(auth).then(() => {
+      }).catch((error) => {
+        console.error("Erro ao fazer logout:", error);
+        notify("Erro ao fazer logout: " + error.message, false);
+      });
+    }
+
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        document.getElementById('login-container').style.display = 'none';
+        document.getElementById('admin-app').style.display = '';
+        renderProdutos(); // Renderiza produtos
+        renderOrders(); // Renderiza pedidos
+      } else {
+        document.getElementById('login-container').style.display = '';
+        document.getElementById('admin-app').style.display = 'none';
+        document.getElementById('admin-email').value = '';
+        document.getElementById('admin-pass').value = '';
+        document.getElementById('login-err').innerText = '';
+      }
+    });
+
+    // --- NOTIFICAÇÃO VISUAL ---
+    function notify(msg, ok=true) {
+      const box = document.getElementById('notify');
+      box.style.background = ok ? "#4CAF50" : "#b01212";
+      box.innerText = msg;
+      box.style.display = 'block';
+      setTimeout(() => { box.style.display = 'none'; }, 2600);
+    }
+
+    // --- FORMULÁRIO DE PRODUTOS ---
+    function limparForm() {
+      document.getElementById('produto-form').reset();
+      document.getElementById('edit-id').value = '';
+      document.getElementById('form-btn').innerText = 'Cadastrar Produto';
+      document.getElementById('upload-preview').innerHTML = '';
+      document.getElementById('upload-preview').removeAttribute('data-url');
+      document.getElementById('imgurl').value = '';
+    }
+    document.getElementById('produto-form').onsubmit = async function(e) {
+      e.preventDefault();
+      const nome = document.getElementById('nome').value.trim();
+      const preco = parseFloat(document.getElementById('preco').value.replace(',', '.'));
+      const categoria = document.getElementById('categoria').value;
+      const subcategoria = document.getElementById('subcategoria').value.trim();
+      let imgurl = document.getElementById('imgurl').value.trim();
+      const descricao = document.getElementById('descricao').value.trim();
+      const estoque = parseInt(document.getElementById('estoque').value);
+      const editId = document.getElementById('edit-id').value;
+
+      if (!nome || isNaN(preco) || preco < 0 || !categoria || isNaN(estoque) || estoque < 0) {
+        notify('Preencha todos os campos obrigatórios!', false);
+        return;
+      }
+
+      if(document.getElementById('upload-preview').dataset.url){
+        imgurl = document.getElementById('upload-preview').dataset.url;
+      }
+
+      const produto = { nome, preco, categoria, subcategoria, imgurl, descricao, estoque };
+      
+      try {
+        if (editId) {
+          const productRef = doc(db, 'products', editId);
+          await updateDoc(productRef, produto);
+          notify('Produto atualizado com sucesso!');
+        } else {
+          await addDoc(collection(db, 'products'), produto); 
+          notify('Produto cadastrado com sucesso!');
+        }
+        limparForm();
+      } catch (error) {
+        console.error("Erro ao salvar produto:", error);
+        notify("Erro ao salvar produto: " + error.message, false);
+      }
+    };
+
+    // --- UPLOAD DE IMAGEM ---
+    document.getElementById('upload-img').addEventListener('change', function() {
+      const file = this.files[0];
+      if(!file) return;
+      const uploadPreview = document.getElementById('upload-preview');
+      uploadPreview.innerHTML = 'Carregando...';
+      
+      const uniqueFileName = `${Date.now()}_${file.name}`;
+      const storageRef = ref(storage, 'produtos/' + uniqueFileName);
+      
+      uploadBytes(storageRef, file).then(snapshot => {
+        getDownloadURL(snapshot.ref).then(url => {
+          uploadPreview.innerHTML = `<img src="${url}">`;
+          uploadPreview.dataset.url = url;
+          notify('Imagem enviada com sucesso!');
+        });
+      }).catch((error) => {
+        console.error("Erro ao enviar imagem:", error);
+        notify('Falha ao enviar imagem! ' + error.message, false);
+        uploadPreview.innerHTML = '';
+        uploadPreview.removeAttribute('data-url');
+      });
+    });
+
+    // --- BUSCA E RENDERIZAÇÃO PRODUTOS ---
+    let produtosCache = [];
+    function renderProdutos() {
+      onSnapshot(collection(db, 'products'), (snapshot) => {
+        const list = document.getElementById('prod-list');
+        list.innerHTML = '';
+        produtosCache = [];
+        let total = 0, esgotados = 0, emEstoque = 0;
+        
+        if (snapshot.empty) {
+          list.innerHTML = '<p style="color:#aaa;">Nenhum produto cadastrado ainda.</p>';
+        } else {
+          snapshot.forEach(doc => {
+            const p = doc.data();
+            p.id = doc.id;
+            
+            const normalizedCategory = String(p.categoria || '').trim().toLowerCase();
+            
+            if(['vestuario','muaythai','jiujitsu','acessorios'].includes(normalizedCategory)){
+              produtosCache.push(p);
+              total++;
+              if(p.estoque == 0) esgotados++;
+              else emEstoque++;
+            }
+          });
+        }
+        updateStats(total, esgotados, emEstoque);
+        filterAndShow();
+      }, (error) => {
+        console.error("Erro ao buscar produtos do Firestore (admin):", error);
+        notify("Erro ao carregar produtos: " + error.message, false);
+      });
+    }
+    function updateStats(total, esgotados, emEstoque){
+      document.getElementById('stats-box').innerHTML = `
+        <b>Produtos:</b> <strong>${total}</strong> &nbsp;|&nbsp; 
+        <span style="color:#b01212">Esgotados:</span> <strong>${esgotados}</strong> &nbsp;|&nbsp; 
+        <span style="color:#4CAF50">Em estoque:</span> <strong>${emEstoque}</strong>
+      `;
+    }
+    document.getElementById('busca-produto').oninput = filterAndShow;
+    function filterAndShow() {
+      const busca = document.getElementById('busca-produto').value.toLowerCase().trim();
+      const list = document.getElementById('prod-list');
+      list.innerHTML = '';
+      let lista = produtosCache;
+      if(busca.length > 0){
+        lista = lista.filter(p => String(p.nome || '').toLowerCase().includes(busca));
+      }
+      if(lista.length == 0){
+        list.innerHTML = '<p style="color:#aaa;">Nenhum produto encontrado.</p>';
+      }else{
+        lista.forEach(p => {
+          const div = document.createElement('div');
+          div.className = 'prod-item';
+          div.innerHTML = `
+            <img src="${p.imgurl || 'https://placehold.co/65x65?text=Img'}" alt="${p.nome}">
+            <div class="prod-info">
+              <div class="prod-nome">${p.nome}</div>
+              <div class="prod-cat">${p.categoria}${p.subcategoria ? ' / '+p.subcategoria : ''}</div>
+              <div class="prod-preco">R$ ${parseFloat(p.preco).toFixed(2).replace('.', ',')}</div>
+              <div class="prod-desc">${p.descricao || ''}</div>
+              <div class="prod-estoque${p.estoque === 0 ? ' esgotado' : ''}">${p.estoque === 0 ? 'Esgotado' : 'Estoque: ' + p.estoque}</div>
+            </div>
+            <button class="edit-btn" onclick="window.editProduto('${p.id}')">Editar</button>
+            <button class="del-btn" onclick="window.delProduto('${p.id}')">Excluir</button>
+          `;
+          list.appendChild(div);
+        });
+      }
+    }
+
+    // --- EXCLUIR/EDITAR PRODUTO ---
+    window.delProduto = async function(id) {
+      const confirmDelete = await showConfirmModal('Tem certeza que deseja excluir este produto?');
+      if (confirmDelete) {
+        try {
+          await deleteDoc(doc(db, 'products', id));
+          notify('Produto excluído!');
+        } catch (error) {
+          console.error("Erro ao excluir produto:", error);
+          notify("Erro ao excluir produto: " + error.message, false);
+        }
+      }
+    };
+    window.editProduto = async function(id) {
+      try {
+        const productRef = doc(db, 'products', id);
+        const docSnap = await getDoc(productRef);
+        
+        if (docSnap.exists()) {
+          const p = docSnap.data();
+          document.getElementById('nome').value = p.nome;
+          document.getElementById('preco').value = p.preco;
+          document.getElementById('categoria').value = p.categoria;
+          document.getElementById('subcategoria').value = p.subcategoria || '';
+          document.getElementById('imgurl').value = p.imgurl;
+          document.getElementById('descricao').value = p.descricao || '';
+          document.getElementById('estoque').value = p.estoque ?? 0;
+          document.getElementById('edit-id').value = docSnap.id;
+          document.getElementById('form-btn').innerText = 'Salvar Edição';
+          document.getElementById('upload-preview').innerHTML = p.imgurl ? `<img src="${p.imgurl}">` : '';
+          document.getElementById('upload-preview').dataset.url = p.imgurl;
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        } else {
+          notify('Produto não encontrado para edição.', false);
+        }
+      } catch (error) {
+        console.error("Erro ao buscar produto para edição:", error);
+        notify("Erro ao carregar produto para edição: " + error.message, false);
+      }
+    };
+
+    // --- GESTÃO DE PEDIDOS ---
+    let ordersCache = [];
+    function renderOrders() {
+      // Cria uma query para buscar pedidos ordenados pela data de criação (mais recentes primeiro)
+      const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
+
+      onSnapshot(q, (snapshot) => {
+        const list = document.getElementById('order-list');
+        list.innerHTML = '';
+        ordersCache = [];
+        
+        if (snapshot.empty) {
+          list.innerHTML = '<p style="text-align:center; color:#aaa;">Nenhum pedido encontrado ainda.</p>';
+        } else {
+          snapshot.forEach(doc => {
+            const order = doc.data();
+            order.id = doc.id; // Adiciona o ID do documento Firestore ao objeto do pedido
+            ordersCache.push(order);
+            
+            const createdAtDate = order.createdAt ? new Date(order.createdAt.seconds * 1000).toLocaleString('pt-BR') : 'N/A';
+            const totalAmount = order.items ? order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0) : 0;
+
+            const div = document.createElement('div');
+            div.className = 'order-item';
+            div.innerHTML = `
+              <div class="order-info">
+                <div class="order-id">Pedido ID: ${order.id}</div>
+                <div class="order-email">Comprador: ${order.payerEmail}</div>
+                <div class="order-date">Data: ${createdAtDate}</div>
+                <div class="order-total">Total: R$ ${totalAmount.toFixed(2).replace('.', ',')}</div>
+                <div class="order-status">Status: 
+                  <select class="status-select" onchange="window.updateOrderStatus('${order.id}', this.value)">
+                    <option value="pending" ${order.status === 'pending' ? 'selected' : ''}>Pendente</option>
+                    <option value="approved" ${order.status === 'approved' ? 'selected' : ''}>Aprovado</option>
+                    <option value="completed" ${order.status === 'completed' ? 'selected' : ''}>Concluído</option>
+                    <option value="cancelled" ${order.status === 'cancelled' ? 'selected' : ''}>Cancelado</option>
+                  </select>
+                </div>
+              </div>
+              <button class="view-btn" onclick="window.viewOrderDetails('${order.id}')">Ver Detalhes</button>
+            `;
+            list.appendChild(div);
+          });
+        }
+      }, (error) => {
+        console.error("Erro ao buscar pedidos do Firestore (admin):", error);
+        notify("Erro ao carregar pedidos: " + error.message, false);
+      });
+    }
+
+    window.updateOrderStatus = async function(orderId, newStatus) {
+      try {
+        const orderRef = doc(db, 'orders', orderId);
+        await updateDoc(orderRef, { status: newStatus });
+        notify(`Status do pedido ${orderId} atualizado para ${newStatus}!`);
+      } catch (error) {
+        console.error("Erro ao atualizar status do pedido:", error);
+        notify("Erro ao atualizar status: " + error.message, false);
+      }
+    };
+
+    window.viewOrderDetails = function(orderId) {
+      const order = ordersCache.find(o => o.id === orderId);
+      if (!order) {
+        notify('Pedido não encontrado.', false);
+        return;
+      }
+
+      document.getElementById('modal-order-id').innerText = order.id;
+      document.getElementById('modal-payer-email').innerText = order.payerEmail;
+      document.getElementById('modal-order-date').innerText = order.createdAt ? new Date(order.createdAt.seconds * 1000).toLocaleString('pt-BR') : 'N/A';
+      document.getElementById('modal-order-status').innerText = order.status;
+
+      const itemsList = document.getElementById('modal-order-items');
+      itemsList.innerHTML = '';
+      let total = 0;
+      if (order.items && order.items.length > 0) {
+        order.items.forEach(item => {
+          const li = document.createElement('li');
+          li.className = 'order-detail-item';
+          li.innerHTML = `<strong>${item.quantity}x ${item.name}</strong> - R$ ${(item.price * item.quantity).toFixed(2).replace('.', ',')}`;
+          itemsList.appendChild(li);
+          total += item.price * item.quantity;
+        });
+      } else {
+        itemsList.innerHTML = '<li>Nenhum item neste pedido.</li>';
+      }
+      document.getElementById('modal-order-total').innerText = `R$ ${total.toFixed(2).replace('.', ',')}`;
+
+      document.getElementById('order-details-modal').style.display = 'flex';
+    };
+
+    window.closeOrderDetailsModal = function() {
+      document.getElementById('order-details-modal').style.display = 'none';
+    };
+
+
+    // --- Modal de Confirmação (Substitui alert/confirm) ---
+    function showConfirmModal(message) {
+      return new Promise(resolve => {
+        const modalHtml = `
+          <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 9999;">
+            <div style="background: white; padding: 30px; border-radius: 15px; text-align: center; max-width: 400px; box-shadow: 0 4px 20px rgba(0,0,0,0.2);">
+              <p style="font-size: 1.1em; margin-bottom: 25px;">${message}</p>
+              <button id="confirm-yes" style="background: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; margin-right: 15px;">Sim</button>
+              <button id="confirm-no" style="background: #8c1212; color: white; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer;">Não</button>
+            </div>
+          </div>
+        `;
+        const modalDiv = document.createElement('div');
+        modalDiv.innerHTML = modalHtml;
+        document.body.appendChild(modalDiv);
+
+        document.getElementById('confirm-yes').onclick = () => {
+          modalDiv.remove();
+          resolve(true);
+        };
+        document.getElementById('confirm-no').onclick = () => {
+          modalDiv.remove();
+          resolve(false);
+        };
+      });
+    }
+  </script>
+</body>
+</html>
