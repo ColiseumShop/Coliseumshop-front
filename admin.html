@@ -6,7 +6,7 @@
   <title>Admin Coliseum Shop</title>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700&display=swap" rel="stylesheet">
   <style>
-    body { background: #fff; color: #222; font-family: 'Montserrat', Arial, sans-serif; margin: 0; }
+    body { font-family: 'Montserrat', Arial, sans-serif; margin: 0; background: #f8f5f0; color: #222; }
     header { background: #fff; padding: 26px 10px 14px 10px; text-align: center; border-bottom: 2px solid #b8862b; }
     h1 { color: #8c1212; font-size: 2.2em; margin-bottom: 5px; }
     /* Estilos para as abas */
@@ -49,17 +49,28 @@
     .del-btn, .edit-btn, .view-btn, .status-select { width:auto; padding:8px 15px; margin:0 3px;}
     .del-btn { background:#8c1212;}
     .edit-btn { background:#b8862b;}
-    .view-btn { background:#007bff; color:#fff;} /* Novo estilo para botão 'Ver Detalhes' */
-    .status-select { background:#f0f0f0; border:1px solid #ccc; border-radius:5px;} /* Estilo para select de status */
+    .view-btn { background:#007bff; color:#fff;}
+    .status-select { background:#f0f0f0; border:1px solid #ccc; border-radius:5px;}
     .edit-btn:hover {background:#5e4007;}
     .del-btn:hover {background:#b8862b;}
     .view-btn:hover {background:#0056b3;}
     .form-actions { display:flex; gap:12px; }
     .form-actions button {width:100%;}
+    /* Estilos para Notificações */
     #notify {
       position:fixed; top:20px; right:20px; background:#4CAF50; color:#fff; font-weight:bold; padding:18px 32px; border-radius:14px;
-      z-index:5000; box-shadow:0 4px 24px #2225; font-size:1.07em; display:none;
+      z-index:5000; box-shadow:0 4px 24px rgba(0,0,0,0.2); font-size:1.07em; display:none;
+      animation: fadeInOut 3s forwards; /* Animação de fade */
     }
+    #notify.error { background: #b01212; } /* Cor para erro */
+
+    @keyframes fadeInOut {
+      0% { opacity: 0; transform: translateY(-20px); }
+      10% { opacity: 1; transform: translateY(0); }
+      90% { opacity: 1; transform: translateY(0); }
+      100% { opacity: 0; transform: translateY(-20px); }
+    }
+
     #stats-box {background:#ffe7bb;margin:22px 0 18px 0;padding:13px 18px;border-radius:12px;font-size:1.04em;}
     #stats-box strong {color:#8c1212;}
     #busca-produto {margin-bottom:12px;}
@@ -69,7 +80,7 @@
     .login-box input { margin-bottom: 18px;}
     .login-box button {margin-top:12px;}
     /* Estilos para o Modal de Detalhes do Pedido */
-    #order-details-modal {
+    #order-details-modal, #confirm-modal { /* Adicionado #confirm-modal */
       display: none;
       position: fixed;
       z-index: 10000;
@@ -112,13 +123,25 @@
     }
     .order-detail-item:last-child { border-bottom: none; }
 
-    @media (max-width: 700px) {
-      main { padding: 1em 2vw; }
-      .prod-item, .order-item { flex-direction: column; align-items: flex-start; }
+    /* Responsividade */
+    @media (max-width: 768px) { /* Para tablets e telemóveis */
+      main { margin: 20px auto; padding: 20px 15px; }
+      h1 { font-size: 1.8em; }
+      .tabs { flex-wrap: wrap; justify-content: flex-start; }
+      .tab-button { flex: 1 1 auto; margin: 5px; padding: 8px 15px; font-size: 0.9em; }
+      .prod-item, .order-item { flex-direction: column; align-items: flex-start; gap: 10px; padding: 10px 0; }
       .prod-item img { margin-bottom: 10px; }
-      .del-btn, .edit-btn, .view-btn, .status-select { width:100%; margin:4px 0;}
-      #notify {max-width: 90vw;right:2vw;}
-      .modal-content { width: 95%; }
+      .prod-info, .order-info { width: 100%; }
+      .del-btn, .edit-btn, .view-btn, .status-select { width: 100%; margin: 5px 0; }
+      .form-actions { flex-direction: column; gap: 10px; }
+      #notify { top: 10px; right: 10px; left: 10px; width: auto; padding: 15px 20px; font-size: 0.95em; }
+      .modal-content { width: 95%; padding: 15px; }
+    }
+    @media (max-width: 480px) { /* Para telemóveis pequenos */
+      main { margin: 15px auto; padding: 15px 10px; }
+      h1 { font-size: 1.5em; }
+      .tab-button { font-size: 0.85em; padding: 6px 10px; }
+      .login-box { margin: 30px auto; padding: 20px; }
     }
   </style>
 </head>
@@ -195,7 +218,7 @@
   <!-- Modal de Detalhes do Pedido -->
   <div id="order-details-modal">
     <div class="modal-content">
-      <span class="close-button" onclick="closeOrderDetailsModal()">&times;</span>
+      <span class="close-button" onclick="window.closeOrderDetailsModal()">&times;</span>
       <h3>Detalhes do Pedido <span id="modal-order-id"></span></h3>
       <p><strong>Comprador:</strong> <span id="modal-payer-email"></span></p>
       <p><strong>Data:</strong> <span id="modal-order-date"></span></p>
@@ -206,10 +229,18 @@
     </div>
   </div>
 
+  <!-- Modal de Confirmação (para substituir alert/confirm) -->
+  <div id="confirm-modal">
+    <div class="modal-content">
+      <p id="confirm-message"></p>
+      <button id="confirm-yes">Sim</button>
+      <button id="confirm-no">Não</button>
+    </div>
+  </div>
+
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, getDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-    import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
     import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
     const firebaseConfig = {
@@ -224,8 +255,26 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
-    const storage = getStorage(app);
     const auth = getAuth(app);
+
+    // URL do seu novo endpoint de upload no backend Vercel
+    const UPLOAD_API_URL = 'https://coliseumshop-backend.vercel.app/api/upload'; // ATUALIZE COM SEU URL REAL DO BACKEND
+
+    // --- LÓGICA DE ABAS ---
+    document.addEventListener('DOMContentLoaded', () => {
+      const tabButtons = document.querySelectorAll('.tab-button');
+      const tabContents = document.querySelectorAll('.tab-content');
+
+      tabButtons.forEach(button => {
+        button.addEventListener('click', () => {
+          tabButtons.forEach(btn => btn.classList.remove('active'));
+          tabContents.forEach(content => content.classList.remove('active'));
+
+          button.classList.add('active');
+          document.getElementById(button.dataset.tab + '-tab').classList.add('active');
+        });
+      });
+    });
 
     // --- LOGIN COM FIREBASE AUTH ---
     window.doLogin = async function() {
@@ -269,8 +318,8 @@
       if (user) {
         document.getElementById('login-container').style.display = 'none';
         document.getElementById('admin-app').style.display = '';
-        renderProdutos(); // Renderiza produtos
-        renderOrders(); // Renderiza pedidos
+        renderProdutos();
+        renderOrders();
       } else {
         document.getElementById('login-container').style.display = '';
         document.getElementById('admin-app').style.display = 'none';
@@ -281,11 +330,15 @@
     });
 
     // --- NOTIFICAÇÃO VISUAL ---
-    function notify(msg, ok=true) {
+    function notify(msg, isSuccess = true) {
       const box = document.getElementById('notify');
-      box.style.background = ok ? "#4CAF50" : "#b01212";
       box.innerText = msg;
+      box.className = ''; // Limpa classes anteriores
+      box.classList.add(isSuccess ? 'success' : 'error'); // Adiciona classe de sucesso ou erro
       box.style.display = 'block';
+      box.style.animation = 'none'; // Reseta animação
+      void box.offsetWidth; // Trigger reflow
+      box.style.animation = null; // Reinicia animação
       setTimeout(() => { box.style.display = 'none'; }, 2600);
     }
 
@@ -336,28 +389,42 @@
       }
     };
 
-    // --- UPLOAD DE IMAGEM ---
-    document.getElementById('upload-img').addEventListener('change', function() {
+    // --- UPLOAD DE IMAGEM VIA BACKEND ---
+    document.getElementById('upload-img').addEventListener('change', async function() {
       const file = this.files[0];
-      if(!file) return;
+      if (!file) return;
+
       const uploadPreview = document.getElementById('upload-preview');
-      uploadPreview.innerHTML = 'Carregando...';
+      uploadPreview.innerHTML = 'Carregando imagem...';
       
-      const uniqueFileName = `${Date.now()}_${file.name}`;
-      const storageRef = ref(storage, 'produtos/' + uniqueFileName);
-      
-      uploadBytes(storageRef, file).then(snapshot => {
-        getDownloadURL(snapshot.ref).then(url => {
-          uploadPreview.innerHTML = `<img src="${url}">`;
-          uploadPreview.dataset.url = url;
-          notify('Imagem enviada com sucesso!');
+      const formData = new FormData();
+      formData.append('image', file);
+
+      try {
+        const response = await fetch(UPLOAD_API_URL, {
+          method: 'POST',
+          body: formData,
         });
-      }).catch((error) => {
-        console.error("Erro ao enviar imagem:", error);
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: 'Erro desconhecido no upload.' }));
+          throw new Error(`Falha no upload: ${errorData.error || response.statusText}`);
+        }
+
+        const data = await response.json();
+        if (data.url) {
+          uploadPreview.innerHTML = `<img src="${data.url}">`;
+          uploadPreview.dataset.url = data.url;
+          notify('Imagem enviada com sucesso!', true);
+        } else {
+          throw new Error('URL da imagem não recebida do backend.');
+        }
+      } catch (error) {
+        console.error("Erro ao enviar imagem para o backend:", error);
         notify('Falha ao enviar imagem! ' + error.message, false);
         uploadPreview.innerHTML = '';
         uploadPreview.removeAttribute('data-url');
-      });
+      }
     });
 
     // --- BUSCA E RENDERIZAÇÃO PRODUTOS ---
@@ -476,7 +543,6 @@
     // --- GESTÃO DE PEDIDOS ---
     let ordersCache = [];
     function renderOrders() {
-      // Cria uma query para buscar pedidos ordenados pela data de criação (mais recentes primeiro)
       const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
 
       onSnapshot(q, (snapshot) => {
@@ -489,7 +555,7 @@
         } else {
           snapshot.forEach(doc => {
             const order = doc.data();
-            order.id = doc.id; // Adiciona o ID do documento Firestore ao objeto do pedido
+            order.id = doc.id;
             ordersCache.push(order);
             
             const createdAtDate = order.createdAt ? new Date(order.createdAt.seconds * 1000).toLocaleString('pt-BR') : 'N/A';
@@ -569,29 +635,19 @@
       document.getElementById('order-details-modal').style.display = 'none';
     };
 
-
     // --- Modal de Confirmação (Substitui alert/confirm) ---
     function showConfirmModal(message) {
       return new Promise(resolve => {
-        const modalHtml = `
-          <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 9999;">
-            <div style="background: white; padding: 30px; border-radius: 15px; text-align: center; max-width: 400px; box-shadow: 0 4px 20px rgba(0,0,0,0.2);">
-              <p style="font-size: 1.1em; margin-bottom: 25px;">${message}</p>
-              <button id="confirm-yes" style="background: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; margin-right: 15px;">Sim</button>
-              <button id="confirm-no" style="background: #8c1212; color: white; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer;">Não</button>
-            </div>
-          </div>
-        `;
-        const modalDiv = document.createElement('div');
-        modalDiv.innerHTML = modalHtml;
-        document.body.appendChild(modalDiv);
+        const modal = document.getElementById('confirm-modal');
+        document.getElementById('confirm-message').innerText = message;
+        modal.style.display = 'flex';
 
         document.getElementById('confirm-yes').onclick = () => {
-          modalDiv.remove();
+          modal.style.display = 'none';
           resolve(true);
         };
         document.getElementById('confirm-no').onclick = () => {
-          modalDiv.remove();
+          modal.style.display = 'none';
           resolve(false);
         };
       });
